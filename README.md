@@ -15,7 +15,7 @@ This script:
 
 1. Create an [odometer goal](https://help.beeminder.com/article/68-odometer-goals) in Beeminder.
 
-2. Create a `.env.local` with your Beeminder API key file in this repo's directory:
+2. Create a `.env.local` file with your [Beeminder API key](https://www.beeminder.com/settings/account#account-permissions) in this repo's directory:
 
    ```
    BEEMINDER_API_KEY=your_api_key_here
