@@ -1,10 +1,34 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { rm, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { $ } from 'bun'
-import { delete_datapoint } from '../src/beeminder-api.ts'
+import * as fs from 'fs'
+import * as fsPromises from 'fs/promises'
 
 const goal_slug = 'test-nebulous' // This is an actual odometer goal in Beeminder!
+
+async function delete_datapoint(
+	goal_slug: string,
+	datapoint_id: string,
+): Promise<void> {
+	const api_key = process.env.BEEMINDER_API_KEY
+	if (!api_key) {
+		throw new Error('BEEMINDER_API_KEY not found in environment variables')
+	}
+
+	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints/${datapoint_id}.json?auth_token=${api_key}`
+
+	const response = await fetch(url, {
+		method: 'DELETE',
+	})
+
+	if (!response.ok) {
+		const error_text = await response.text()
+		throw new Error(
+			`Failed to delete datapoint: ${response.status} ${error_text}`,
+		)
+	}
+}
 
 function extract_datapoint_id(script_output: string): string | null {
 	const match = script_output.match(/id[:\s]+"([^"]+)"/)
@@ -259,5 +283,70 @@ This file should not be counted because it doesn't have the target tag.
 		expect(result2).toContain(
 			'Datapoint already exists with this word count for today',
 		)
+	})
+
+	test('script does not call file deletion APIs during execution', async () => {
+		const tag_name = `beeminder-${goal_slug}`
+
+		// Create a test file
+		const file_content = `---
+created: '2025-06-02'
+tags:
+  - ${tag_name}
+---
+
+# Test Safety
+
+This is a test to ensure the script doesn't delete anything.
+`
+
+		await Bun.write(join(test_dir, 'safety-test.md'), file_content)
+
+		// Spy on all potential file deletion functions
+		const fs_unlink_spy = spyOn(fs, 'unlink')
+		const fs_unlink_sync_spy = spyOn(fs, 'unlinkSync')
+		const fs_rm_spy = spyOn(fs, 'rm')
+		const fs_rm_sync_spy = spyOn(fs, 'rmSync')
+		const fs_rmdir_spy = spyOn(fs, 'rmdir')
+		const fs_rmdir_sync_spy = spyOn(fs, 'rmdirSync')
+		const fs_promises_unlink_spy = spyOn(fsPromises, 'unlink')
+		const fs_promises_rm_spy = spyOn(fsPromises, 'rm')
+		const fs_promises_rmdir_spy = spyOn(fsPromises, 'rmdir')
+
+		try {
+			// Run the main script
+			const result = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+
+			// Verify the script ran successfully
+			expect(result).toContain('Datapoint submitted successfully')
+
+			// Extract and track the created datapoint ID for cleanup
+			const datapoint_id = extract_datapoint_id(result)
+			if (datapoint_id) {
+				created_datapoints.push({ goal_slug, datapoint_id })
+			}
+
+			// Verify none of the deletion functions were called
+			expect(fs_unlink_spy).not.toHaveBeenCalled()
+			expect(fs_unlink_sync_spy).not.toHaveBeenCalled()
+			expect(fs_rm_spy).not.toHaveBeenCalled()
+			expect(fs_rm_sync_spy).not.toHaveBeenCalled()
+			expect(fs_rmdir_spy).not.toHaveBeenCalled()
+			expect(fs_rmdir_sync_spy).not.toHaveBeenCalled()
+			expect(fs_promises_unlink_spy).not.toHaveBeenCalled()
+			expect(fs_promises_rm_spy).not.toHaveBeenCalled()
+			expect(fs_promises_rmdir_spy).not.toHaveBeenCalled()
+		} finally {
+			// Clean up spies
+			fs_unlink_spy.mockRestore()
+			fs_unlink_sync_spy.mockRestore()
+			fs_rm_spy.mockRestore()
+			fs_rm_sync_spy.mockRestore()
+			fs_rmdir_spy.mockRestore()
+			fs_rmdir_sync_spy.mockRestore()
+			fs_promises_unlink_spy.mockRestore()
+			fs_promises_rm_spy.mockRestore()
+			fs_promises_rmdir_spy.mockRestore()
+		}
 	})
 })

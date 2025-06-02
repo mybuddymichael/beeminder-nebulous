@@ -1,7 +1,9 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { rm, mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { find_markdown_files } from '../src/scan-files'
+import * as fs from 'fs'
+import * as fsPromises from 'fs/promises'
 
 describe('find_markdown_files', () => {
 	const test_dir = join(__dirname, 'temp-test')
@@ -152,5 +154,43 @@ describe('find_markdown_files', () => {
 		expect(files).toHaveLength(2)
 		expect(files).toContain(join(test_dir, 'document.md'))
 		expect(files).toContain(join(test_dir, 'another.md'))
+	})
+
+	test('does not call file deletion APIs', async () => {
+		// Spy on all potential file deletion functions
+		const fs_unlink_spy = spyOn(fs, 'unlink')
+		const fs_unlink_sync_spy = spyOn(fs, 'unlinkSync')
+		const fs_rm_spy = spyOn(fs, 'rm')
+		const fs_rm_sync_spy = spyOn(fs, 'rmSync')
+		const fs_rmdir_spy = spyOn(fs, 'rmdir')
+		const fs_rmdir_sync_spy = spyOn(fs, 'rmdirSync')
+		const fs_promises_unlink_spy = spyOn(fsPromises, 'unlink')
+		const fs_promises_rm_spy = spyOn(fsPromises, 'rm')
+		const fs_promises_rmdir_spy = spyOn(fsPromises, 'rmdir')
+
+		// Run the function
+		await find_markdown_files(join(__dirname, 'test-folders'))
+
+		// Verify none of the deletion functions were called
+		expect(fs_unlink_spy).not.toHaveBeenCalled()
+		expect(fs_unlink_sync_spy).not.toHaveBeenCalled()
+		expect(fs_rm_spy).not.toHaveBeenCalled()
+		expect(fs_rm_sync_spy).not.toHaveBeenCalled()
+		expect(fs_rmdir_spy).not.toHaveBeenCalled()
+		expect(fs_rmdir_sync_spy).not.toHaveBeenCalled()
+		expect(fs_promises_unlink_spy).not.toHaveBeenCalled()
+		expect(fs_promises_rm_spy).not.toHaveBeenCalled()
+		expect(fs_promises_rmdir_spy).not.toHaveBeenCalled()
+
+		// Clean up spies
+		fs_unlink_spy.mockRestore()
+		fs_unlink_sync_spy.mockRestore()
+		fs_rm_spy.mockRestore()
+		fs_rm_sync_spy.mockRestore()
+		fs_rmdir_spy.mockRestore()
+		fs_rmdir_sync_spy.mockRestore()
+		fs_promises_unlink_spy.mockRestore()
+		fs_promises_rm_spy.mockRestore()
+		fs_promises_rmdir_spy.mockRestore()
 	})
 })
