@@ -97,14 +97,13 @@ describe('submit_to_beeminder', () => {
 			// Verify fetch was called with correct parameters
 			expect(mock_fetch).toHaveBeenCalledTimes(1)
 			expect(mock_fetch).toHaveBeenCalledWith(
-				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json',
+				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify({
-						auth_token: 'test-api-key',
 						value: 100,
 						requestid: 'wordcount-100-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
@@ -131,10 +130,9 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('nebulous-work', 250)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
-				'https://www.beeminder.com/api/v1/users/me/goals/nebulous-work/datapoints.json',
+				'https://www.beeminder.com/api/v1/users/me/goals/nebulous-work/datapoints.json?auth_token=test-api-key',
 				expect.objectContaining({
 					body: JSON.stringify({
-						auth_token: 'test-api-key',
 						value: 250,
 						requestid: 'wordcount-250-2024-01-15',
 						comment: 'Word count from beeminder-nebulous-work tagged files',
@@ -152,10 +150,9 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('test-goal', 0)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
-				expect.any(String),
+				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
 				expect.objectContaining({
 					body: JSON.stringify({
-						auth_token: 'test-api-key',
 						value: 0,
 						requestid: 'wordcount-0-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
@@ -173,10 +170,9 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('test-goal', 999999)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
-				expect.any(String),
+				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
 				expect.objectContaining({
 					body: JSON.stringify({
-						auth_token: 'test-api-key',
 						value: 999999,
 						requestid: 'wordcount-999999-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
@@ -311,7 +307,7 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('my-special-goal', 100)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
-				'https://www.beeminder.com/api/v1/users/me/goals/my-special-goal/datapoints.json',
+				'https://www.beeminder.com/api/v1/users/me/goals/my-special-goal/datapoints.json?auth_token=test-api-key',
 				expect.any(Object),
 			)
 		})
@@ -323,7 +319,6 @@ describe('submit_to_beeminder', () => {
 			const request_body = JSON.parse(call_args[1].body)
 
 			expect(request_body).toEqual({
-				auth_token: 'test-api-key',
 				value: 150,
 				requestid: 'wordcount-150-2024-01-15',
 				comment: 'Word count from beeminder-test-goal tagged files',
@@ -392,7 +387,7 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('goal-with-dashes_and_underscores', 100)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
-				'https://www.beeminder.com/api/v1/users/me/goals/goal-with-dashes_and_underscores/datapoints.json',
+				'https://www.beeminder.com/api/v1/users/me/goals/goal-with-dashes_and_underscores/datapoints.json?auth_token=test-api-key',
 				expect.any(Object),
 			)
 		})
@@ -409,8 +404,8 @@ describe('submit_to_beeminder', () => {
 			await submit_to_beeminder('test-goal', 100)
 
 			const call_args = mock_fetch.mock.calls[0]
-			const request_body = JSON.parse(call_args[1].body)
-			expect(request_body.auth_token).toBe(long_api_key)
+			const request_url = call_args[0]
+			expect(request_url).toBe(`https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=${long_api_key}`)
 		})
 	})
 })

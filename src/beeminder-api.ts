@@ -9,7 +9,7 @@ export async function submit_to_beeminder(
 
 	const today = new Date().toISOString().split('T')[0]
 	const request_id = `wordcount-${word_count}-${today}`
-	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints.json`
+	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints.json?auth_token=${api_key}`
 
 	const response = await fetch(url, {
 		method: 'POST',
@@ -17,7 +17,6 @@ export async function submit_to_beeminder(
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({
-			auth_token: api_key,
 			value: word_count,
 			requestid: request_id,
 			comment: `Word count from beeminder-${goal_slug} tagged files`,
