@@ -1,0 +1,3 @@
+# Not a markdown file
+
+This should not be found.
