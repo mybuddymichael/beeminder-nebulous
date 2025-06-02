@@ -1,0 +1,13 @@
+{
+	"name": "beeminder-nebulous",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"oxlint": "^0.17.0"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	}
+}
