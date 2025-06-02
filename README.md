@@ -13,7 +13,10 @@ This script:
 
 ## Setup
 
-1. Create a `.env.local` file with your Beeminder API key:
+1. Create an [odometer goal](https://help.beeminder.com/article/68-odometer-goals) in Beeminder.
+
+2. Create a `.env.local` with your Beeminder API key file in this repo's directory:
+
    ```
    BEEMINDER_API_KEY=your_api_key_here
    ```
@@ -62,4 +65,5 @@ Your content here...
 
 - [Bun](https://bun.sh) runtime
 - Beeminder API key
+- An odometer goal in Beeminder
 - Markdown files with YAML frontmatter
