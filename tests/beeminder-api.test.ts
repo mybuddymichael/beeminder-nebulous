@@ -13,16 +13,19 @@ global.Date = class extends Date {
 		if (args.length === 0) {
 			super(`${mock_date}T00:00:00.000Z`)
 		} else {
-			super(...args)
+			super(...(args as ConstructorParameters<typeof Date>))
 		}
 	}
 
-	static now() {
+	static now(): number {
 		return new original_date(`${mock_date}T00:00:00.000Z`).getTime()
 	}
 
-	toISOString() {
-		if (this.getTime() === new original_date(`${mock_date}T00:00:00.000Z`).getTime()) {
+	toISOString(): string {
+		if (
+			this.getTime() ===
+			new original_date(`${mock_date}T00:00:00.000Z`).getTime()
+		) {
 			return `${mock_date}T00:00:00.000Z`
 		}
 		return super.toISOString()
