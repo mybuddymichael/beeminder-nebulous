@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises'
-import { parse_yaml_frontmatter } from './yaml-parser.js'
-import { strip_markdown } from './markdown-stripper.js'
+import { parse_yaml_frontmatter } from './parse-yaml.js'
+import { strip_markdown } from './strip-markdown.js'
 
 export async function count_words(file_path: string): Promise<number> {
 	try {
