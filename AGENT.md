@@ -62,6 +62,11 @@ const response = await fetch('https://example.com')
 await $`cat < ${response} | wc -c` // 1256
 ```
 
+## Testing
+
+- Use Bun's test runner and test API.
+- Place tests in the tests/ directory.
+
 ## Style rules
 
 - Use tabs for indentation.
