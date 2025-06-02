@@ -5,6 +5,21 @@ import { count_words } from '../src/count-words'
 
 const TEST_DIR = join(__dirname, 'temp-test-files')
 
+async function restoreFilePermissions(fs: any, path: string, permissions_changed: boolean): Promise<void> {
+	if (!permissions_changed) return
+	
+	try {
+		fs.chmodSync(path, 0o644)
+	} catch {
+		// If we can't restore permissions, try to delete the file
+		try {
+			fs.unlinkSync(path)
+		} catch {
+			// Ignore cleanup failures
+		}
+	}
+}
+
 describe('count_words', () => {
 	beforeAll(async () => {
 		// Create temporary test directory
@@ -184,21 +199,24 @@ Final paragraph with regular text.`
 			const restricted_path = join(TEST_DIR, 'restricted.md')
 			await writeFile(restricted_path, 'test content')
 
+			const fs = require('fs')
+			let permissions_changed = false
+
 			try {
 				// Try to change permissions (may fail on some systems)
-				const fs = require('fs')
 				fs.chmodSync(restricted_path, 0o000)
+				permissions_changed = true
 
 				const count = await count_words(restricted_path)
 				expect(count).toBe(0)
-
-				// Restore permissions for cleanup
-				fs.chmodSync(restricted_path, 0o644)
 			} catch {
 				// If chmod doesn't work, skip this test
 				expect(true).toBe(true)
+			} finally {
+				await restoreFilePermissions(fs, restricted_path, permissions_changed)
 			}
 		})
+
 	})
 
 	describe('edge cases', () => {

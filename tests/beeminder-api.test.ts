@@ -1,7 +1,16 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import {
+	describe,
+	test,
+	expect,
+	beforeEach,
+	afterEach,
+	afterAll,
+	mock,
+} from 'bun:test'
 import { submit_to_beeminder } from '../src/beeminder-api'
 
-// Mock fetch globally
+// Store original fetch and mock fetch globally
+const original_fetch = global.fetch
 const mock_fetch = mock() as any
 global.fetch = mock_fetch
 
@@ -92,33 +101,35 @@ describe('submit_to_beeminder', () => {
 			const original_console_log = console.log
 			console.log = console_log_spy
 
-			await submit_to_beeminder('test-goal', 100)
+			try {
+				await submit_to_beeminder('test-goal', 100)
 
-			// Verify fetch was called with correct parameters
-			expect(mock_fetch).toHaveBeenCalledTimes(1)
-			expect(mock_fetch).toHaveBeenCalledWith(
-				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
+				// Verify fetch was called with correct parameters
+				expect(mock_fetch).toHaveBeenCalledTimes(1)
+				expect(mock_fetch).toHaveBeenCalledWith(
+					'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
+					{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							value: 100,
+							requestid: 'wordcount-100-2024-01-15',
+							comment: 'Word count from beeminder-test-goal tagged files',
+						}),
 					},
-					body: JSON.stringify({
-						value: 100,
-						requestid: 'wordcount-100-2024-01-15',
-						comment: 'Word count from beeminder-test-goal tagged files',
-					}),
-				},
-			)
+				)
 
-			// Verify success message was logged
-			expect(console_log_spy).toHaveBeenCalledWith(
-				'Datapoint submitted successfully:',
-				mock_response,
-			)
-
-			// Restore console.log
-			console.log = original_console_log
+				// Verify success message was logged
+				expect(console_log_spy).toHaveBeenCalledWith(
+					'Datapoint submitted successfully:',
+					mock_response,
+				)
+			} finally {
+				// Restore console.log
+				console.log = original_console_log
+			}
 		})
 
 		test('should handle different goal slugs correctly', async () => {
@@ -280,16 +291,18 @@ describe('submit_to_beeminder', () => {
 			const original_console_log = console.log
 			console.log = console_log_spy
 
-			// Should not throw an error
-			await submit_to_beeminder('test-goal', 100)
+			try {
+				// Should not throw an error
+				await submit_to_beeminder('test-goal', 100)
 
-			// Verify duplicate message was logged
-			expect(console_log_spy).toHaveBeenCalledWith(
-				'Datapoint already exists with this word count for today',
-			)
-
-			// Restore console.log
-			console.log = original_console_log
+				// Verify duplicate message was logged
+				expect(console_log_spy).toHaveBeenCalledWith(
+					'Datapoint already exists with this word count for today',
+				)
+			} finally {
+				// Restore console.log
+				console.log = original_console_log
+			}
 		})
 
 		test('should still throw error on 422 response that is not duplicate', async () => {
@@ -445,4 +458,10 @@ describe('submit_to_beeminder', () => {
 			)
 		})
 	})
+})
+
+// Restore original fetch and Date after ALL tests in this file complete
+afterAll(() => {
+	global.fetch = original_fetch
+	global.Date = original_date
 })

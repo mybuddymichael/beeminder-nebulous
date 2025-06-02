@@ -38,3 +38,26 @@ export async function submit_to_beeminder(
 	const result = await response.json()
 	console.log('Datapoint submitted successfully:', result)
 }
+
+export async function delete_datapoint(
+	goal_slug: string,
+	datapoint_id: string,
+): Promise<void> {
+	const api_key = process.env.BEEMINDER_API_KEY
+	if (!api_key) {
+		throw new Error('BEEMINDER_API_KEY not found in environment variables')
+	}
+
+	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints/${datapoint_id}.json?auth_token=${api_key}`
+
+	const response = await fetch(url, {
+		method: 'DELETE',
+	})
+
+	if (!response.ok) {
+		const error_text = await response.text()
+		throw new Error(
+			`Failed to delete datapoint: ${response.status} ${error_text}`,
+		)
+	}
+}
