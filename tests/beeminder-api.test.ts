@@ -5,6 +5,30 @@ import { submit_to_beeminder } from '../src/beeminder-api'
 const mock_fetch = mock() as any
 global.fetch = mock_fetch
 
+// Mock Date to ensure consistent test results
+const mock_date = '2024-01-15'
+const original_date = Date
+global.Date = class extends Date {
+	constructor(...args: any[]) {
+		if (args.length === 0) {
+			super(`${mock_date}T00:00:00.000Z`)
+		} else {
+			super(...args)
+		}
+	}
+
+	static now() {
+		return new original_date(`${mock_date}T00:00:00.000Z`).getTime()
+	}
+
+	toISOString() {
+		if (this.getTime() === new original_date(`${mock_date}T00:00:00.000Z`).getTime()) {
+			return `${mock_date}T00:00:00.000Z`
+		}
+		return super.toISOString()
+	}
+} as any
+
 describe('submit_to_beeminder', () => {
 	const original_env = process.env.BEEMINDER_API_KEY
 
@@ -79,7 +103,7 @@ describe('submit_to_beeminder', () => {
 					body: JSON.stringify({
 						auth_token: 'test-api-key',
 						value: 100,
-						requestid: 'wordcount-100',
+						requestid: 'wordcount-100-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
 					}),
 				},
@@ -109,7 +133,7 @@ describe('submit_to_beeminder', () => {
 					body: JSON.stringify({
 						auth_token: 'test-api-key',
 						value: 250,
-						requestid: 'wordcount-250',
+						requestid: 'wordcount-250-2024-01-15',
 						comment: 'Word count from beeminder-nebulous-work tagged files',
 					}),
 				}),
@@ -130,7 +154,7 @@ describe('submit_to_beeminder', () => {
 					body: JSON.stringify({
 						auth_token: 'test-api-key',
 						value: 0,
-						requestid: 'wordcount-0',
+						requestid: 'wordcount-0-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
 					}),
 				}),
@@ -151,7 +175,7 @@ describe('submit_to_beeminder', () => {
 					body: JSON.stringify({
 						auth_token: 'test-api-key',
 						value: 999999,
-						requestid: 'wordcount-999999',
+						requestid: 'wordcount-999999-2024-01-15',
 						comment: 'Word count from beeminder-test-goal tagged files',
 					}),
 				}),
@@ -298,7 +322,7 @@ describe('submit_to_beeminder', () => {
 			expect(request_body).toEqual({
 				auth_token: 'test-api-key',
 				value: 150,
-				requestid: 'wordcount-150',
+				requestid: 'wordcount-150-2024-01-15',
 				comment: 'Word count from beeminder-test-goal tagged files',
 			})
 		})
@@ -322,8 +346,8 @@ describe('submit_to_beeminder', () => {
 			const first_call_body = JSON.parse(mock_fetch.mock.calls[0][1].body)
 			const second_call_body = JSON.parse(mock_fetch.mock.calls[1][1].body)
 
-			expect(first_call_body.requestid).toBe('wordcount-100')
-			expect(second_call_body.requestid).toBe('wordcount-200')
+			expect(first_call_body.requestid).toBe('wordcount-100-2024-01-15')
+			expect(second_call_body.requestid).toBe('wordcount-200-2024-01-15')
 			expect(first_call_body.requestid).not.toBe(second_call_body.requestid)
 		})
 
@@ -345,8 +369,8 @@ describe('submit_to_beeminder', () => {
 			const first_call_body = JSON.parse(mock_fetch.mock.calls[0][1].body)
 			const second_call_body = JSON.parse(mock_fetch.mock.calls[1][1].body)
 
-			expect(first_call_body.requestid).toBe('wordcount-100')
-			expect(second_call_body.requestid).toBe('wordcount-100')
+			expect(first_call_body.requestid).toBe('wordcount-100-2024-01-15')
+			expect(second_call_body.requestid).toBe('wordcount-100-2024-01-15')
 		})
 	})
 

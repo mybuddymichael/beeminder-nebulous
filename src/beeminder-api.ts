@@ -7,7 +7,8 @@ export async function submit_to_beeminder(
 		throw new Error('BEEMINDER_API_KEY not found in environment variables')
 	}
 
-	const request_id = `wordcount-${word_count}`
+	const today = new Date().toISOString().split('T')[0]
+	const request_id = `wordcount-${word_count}-${today}`
 	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints.json`
 
 	const response = await fetch(url, {
