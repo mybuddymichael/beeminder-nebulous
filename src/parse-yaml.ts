@@ -1,6 +1,46 @@
 export interface ParsedMarkdown {
-	frontmatter: Record<string, any> | null
+	frontmatter: Record<string, unknown> | null
 	content: string
+}
+
+function process_array_item(
+	trimmed: string,
+	in_array: boolean,
+	array_items: string[],
+): void {
+	if (in_array) {
+		array_items.push(trimmed.slice(2).trim())
+	}
+}
+
+function process_key_value_line(
+	trimmed: string,
+	current_key: string,
+	in_array: boolean,
+	array_items: string[],
+	parsed: Record<string, unknown>,
+): { current_key: string; in_array: boolean } {
+	if (in_array && current_key) {
+		parsed[current_key] = array_items
+		array_items.length = 0
+		in_array = false
+	}
+
+	const [key, value] = trimmed.split(':', 2)
+	if (!key) return { current_key, in_array }
+
+	current_key = key.trim()
+	const trimmed_value = value?.trim()
+
+	if (!trimmed_value) {
+		in_array = true
+		array_items.length = 0
+	} else {
+		parsed[current_key] = trimmed_value.replace(/^['"]|['"]$/g, '')
+		in_array = false
+	}
+
+	return { current_key, in_array }
 }
 
 export function parse_yaml_frontmatter(file_content: string): ParsedMarkdown {
@@ -12,12 +52,15 @@ export function parse_yaml_frontmatter(file_content: string): ParsedMarkdown {
 	}
 
 	const [, yaml_content, markdown_content] = match
-	let frontmatter: Record<string, any> | null = null
+	let frontmatter: Record<string, unknown> | null = null
+
+	if (!yaml_content || !markdown_content) {
+		return { frontmatter: null, content: file_content }
+	}
 
 	try {
-		// Simple YAML parser for tags array
 		const lines = yaml_content.split('\n')
-		const parsed: Record<string, any> = {}
+		const parsed: Record<string, unknown> = {}
 
 		let current_key = ''
 		let in_array = false
@@ -28,27 +71,17 @@ export function parse_yaml_frontmatter(file_content: string): ParsedMarkdown {
 			if (!trimmed) continue
 
 			if (trimmed.startsWith('- ')) {
-				if (in_array) {
-					array_items.push(trimmed.slice(2).trim())
-				}
+				process_array_item(trimmed, in_array, array_items)
 			} else if (trimmed.includes(':')) {
-				if (in_array && current_key) {
-					parsed[current_key] = array_items
-					array_items = []
-					in_array = false
-				}
-
-				const [key, value] = trimmed.split(':', 2)
-				current_key = key.trim()
-				const trimmed_value = value?.trim()
-
-				if (!trimmed_value) {
-					in_array = true
-					array_items = []
-				} else {
-					parsed[current_key] = trimmed_value.replace(/^['"]|['"]$/g, '')
-					in_array = false
-				}
+				const result = process_key_value_line(
+					trimmed,
+					current_key,
+					in_array,
+					array_items,
+					parsed,
+				)
+				current_key = result.current_key
+				in_array = result.in_array
 			}
 		}
 
@@ -61,5 +94,5 @@ export function parse_yaml_frontmatter(file_content: string): ParsedMarkdown {
 		console.warn(`Failed to parse YAML frontmatter: ${error}`)
 	}
 
-	return { frontmatter, content: markdown_content }
+	return { frontmatter, content: markdown_content || '' }
 }

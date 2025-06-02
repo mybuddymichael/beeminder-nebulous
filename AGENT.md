@@ -62,6 +62,54 @@ const response = await fetch('https://example.com')
 await $`cat < ${response} | wc -c` // 1256
 ```
 
+## Bun's File I/O API
+
+Use the Bun File I/O API to read and write files:
+
+```typescript
+interface Bun {
+	stdin: BunFile
+	stdout: BunFile
+	stderr: BunFile
+
+	file(path: string | number | URL, options?: { type?: string }): BunFile
+
+	write(
+		destination: string | number | BunFile | URL,
+		input:
+			| string
+			| Blob
+			| ArrayBuffer
+			| SharedArrayBuffer
+			| TypedArray
+			| Response,
+	): Promise<number>
+}
+
+interface BunFile {
+	readonly size: number
+	readonly type: string
+
+	text(): Promise<string>
+	stream(): ReadableStream
+	arrayBuffer(): Promise<ArrayBuffer>
+	json(): Promise<any>
+	writer(params: { highWaterMark?: number }): FileSink
+	exists(): Promise<boolean>
+}
+
+export interface FileSink {
+	write(
+		chunk: string | ArrayBufferView | ArrayBuffer | SharedArrayBuffer,
+	): number
+	flush(): number | Promise<number>
+	end(error?: Error): number | Promise<number>
+	start(options?: { highWaterMark?: number }): void
+	ref(): void
+	unref(): void
+}
+```
+
 ## Testing
 
 - Use Bun's test runner and test API.
