@@ -268,6 +268,41 @@ describe('submit_to_beeminder', () => {
 				'Failed to read response',
 			)
 		})
+
+		test('should handle duplicate request gracefully', async () => {
+			mock_fetch.mockResolvedValueOnce({
+				ok: false,
+				status: 422,
+				text: () => Promise.resolve('{"errors":"Duplicate request"}'),
+			})
+
+			const console_log_spy = mock(() => {})
+			const original_console_log = console.log
+			console.log = console_log_spy
+
+			// Should not throw an error
+			await submit_to_beeminder('test-goal', 100)
+
+			// Verify duplicate message was logged
+			expect(console_log_spy).toHaveBeenCalledWith(
+				'Datapoint already exists with this word count for today',
+			)
+
+			// Restore console.log
+			console.log = original_console_log
+		})
+
+		test('should still throw error on 422 response that is not duplicate', async () => {
+			mock_fetch.mockResolvedValueOnce({
+				ok: false,
+				status: 422,
+				text: () => Promise.resolve('{"errors":"Invalid data format"}'),
+			})
+
+			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
+				'Beeminder API error: 422 {"errors":"Invalid data format"}',
+			)
+		})
 	})
 
 	describe('request format validation', () => {
@@ -405,7 +440,9 @@ describe('submit_to_beeminder', () => {
 
 			const call_args = mock_fetch.mock.calls[0]
 			const request_url = call_args[0]
-			expect(request_url).toBe(`https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=${long_api_key}`)
+			expect(request_url).toBe(
+				`https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=${long_api_key}`,
+			)
 		})
 	})
 })
