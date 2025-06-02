@@ -1,4 +1,3 @@
-import { readFile } from 'fs/promises'
 import { parse_yaml_frontmatter } from './parse-yaml'
 
 export async function has_tag(
@@ -6,7 +5,7 @@ export async function has_tag(
 	tag: string,
 ): Promise<boolean> {
 	try {
-		const content = await readFile(file_path, 'utf-8')
+		const content = await Bun.file(file_path).text()
 		const parsed = parse_yaml_frontmatter(content)
 
 		if (parsed.frontmatter?.tags && Array.isArray(parsed.frontmatter.tags)) {

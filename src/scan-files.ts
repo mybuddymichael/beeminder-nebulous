@@ -1,7 +1,9 @@
-import { readdir } from 'fs/promises'
-import { join, extname } from 'path'
+import { readdir } from 'node:fs/promises'
+import { join, extname } from 'node:path'
 
-export async function find_markdown_files(folder_path: string): Promise<string[]> {
+export async function find_markdown_files(
+	folder_path: string,
+): Promise<string[]> {
 	const markdown_files: string[] = []
 
 	async function scan_directory(dir_path: string): Promise<void> {
