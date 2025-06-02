@@ -1,0 +1,18 @@
+import { readFile } from 'fs/promises'
+import { parse_yaml_frontmatter } from './yaml-parser.js'
+
+export async function has_tag(file_path: string, tag: string): Promise<boolean> {
+	try {
+		const content = await readFile(file_path, 'utf-8')
+		const parsed = parse_yaml_frontmatter(content)
+		
+		if (parsed.frontmatter?.tags && Array.isArray(parsed.frontmatter.tags)) {
+			return parsed.frontmatter.tags.includes(tag)
+		}
+		
+		return false
+	} catch (error) {
+		console.error(`Error reading file ${file_path}:`, error)
+		return false
+	}
+}

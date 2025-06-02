@@ -1,89 +1,7 @@
-import { readdir, readFile } from 'fs/promises'
-import { join, extname } from 'path'
-
-async function find_markdown_files(folder_path: string): Promise<string[]> {
-	const markdown_files: string[] = []
-
-	async function scan_directory(dir_path: string): Promise<void> {
-		try {
-			const entries = await readdir(dir_path, { withFileTypes: true })
-
-			const directory_promises: Promise<void>[] = []
-
-			for (const entry of entries) {
-				const full_path = join(dir_path, entry.name)
-
-				if (entry.isDirectory()) {
-					directory_promises.push(scan_directory(full_path))
-				} else if (entry.isFile() && extname(entry.name) === '.md') {
-					markdown_files.push(full_path)
-				}
-			}
-
-			await Promise.all(directory_promises)
-		} catch (error) {
-			console.error(`Error scanning directory ${dir_path}:`, error)
-		}
-	}
-
-	await scan_directory(folder_path)
-	return markdown_files
-}
-
-async function has_tag(file_path: string, tag: string): Promise<boolean> {
-	try {
-		const content = await readFile(file_path, 'utf-8')
-		return content.includes(tag)
-	} catch (error) {
-		console.error(`Error reading file ${file_path}:`, error)
-		return false
-	}
-}
-
-async function count_words(file_path: string): Promise<number> {
-	try {
-		const content = await readFile(file_path, 'utf-8')
-		const words = content.split(/\s+/).filter((word) => word.length > 0)
-		return words.length
-	} catch (error) {
-		console.error(`Error counting words in ${file_path}:`, error)
-		return 0
-	}
-}
-
-async function submit_to_beeminder(
-	goal_slug: string,
-	word_count: number,
-): Promise<void> {
-	const api_key = process.env.BEEMINDER_API_KEY
-	if (!api_key) {
-		throw new Error('BEEMINDER_API_KEY not found in environment variables')
-	}
-
-	const request_id = `wordcount-${word_count}`
-	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints.json`
-
-	const response = await fetch(url, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			auth_token: api_key,
-			value: word_count,
-			requestid: request_id,
-			comment: `Word count from beeminder-${goal_slug} tagged files`,
-		}),
-	})
-
-	if (!response.ok) {
-		const error_text = await response.text()
-		throw new Error(`Beeminder API error: ${response.status} ${error_text}`)
-	}
-
-	const result = await response.json()
-	console.log('Datapoint submitted successfully:', result)
-}
+import { find_markdown_files } from './src/scan-files.ts'
+import { has_tag } from './src/check-tags.ts'
+import { count_words } from './src/count-words.ts'
+import { submit_to_beeminder } from './src/beeminder-api.ts'
 
 async function main(): Promise<void> {
 	// Parse command line arguments
@@ -138,20 +56,6 @@ async function main(): Promise<void> {
 		console.error('Error:', error)
 		process.exit(1)
 	}
-}
-
-// Load environment variables from .env.local
-try {
-	const env_content = await readFile('.env.local', 'utf-8')
-	const env_lines = env_content.split('\n')
-	for (const line of env_lines) {
-		const [key, value] = line.split('=')
-		if (key && value) {
-			process.env[key.trim()] = value.trim()
-		}
-	}
-} catch {
-	console.warn('Warning: Could not load .env.local file')
 }
 
 main()
