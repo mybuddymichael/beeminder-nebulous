@@ -1,6 +1,3 @@
-> [!CAUTION]
-> This script is designed to only _read_ directories and files. It has tests to ensure that it does not remove files or directories during execution. That said, I am not responsible for any damage that may occur if you run this script on your computer.
-
 # beeminder-nebulous
 
 Automatically tracks word counts from tagged markdown files and submits them as datapoints to [Beeminder](https://www.beeminder.com/) goals.
