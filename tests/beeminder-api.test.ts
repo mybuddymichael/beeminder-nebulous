@@ -1,12 +1,4 @@
-import {
-	describe,
-	test,
-	expect,
-	beforeEach,
-	afterEach,
-	afterAll,
-	mock,
-} from 'bun:test'
+import { describe, test, expect, beforeEach, afterAll, mock } from 'bun:test'
 import { submit_to_beeminder } from '../src/beeminder-api'
 
 // Store original fetch and mock fetch globally
@@ -42,49 +34,12 @@ global.Date = class extends Date {
 } as any
 
 describe('submit_to_beeminder', () => {
-	const original_env = process.env.BEEMINDER_API_KEY
-
 	beforeEach(() => {
 		// Clear mock between tests
 		mock_fetch.mockClear()
 	})
 
-	afterEach(() => {
-		// Restore original environment
-		if (original_env !== undefined) {
-			process.env.BEEMINDER_API_KEY = original_env
-		} else {
-			delete process.env.BEEMINDER_API_KEY
-		}
-	})
-
-	describe('environment validation', () => {
-		test('should throw error when BEEMINDER_API_KEY is not set', async () => {
-			delete process.env.BEEMINDER_API_KEY
-
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'BEEMINDER_API_KEY not found in environment variables',
-			)
-
-			expect(mock_fetch).not.toHaveBeenCalled()
-		})
-
-		test('should throw error when BEEMINDER_API_KEY is empty string', async () => {
-			process.env.BEEMINDER_API_KEY = ''
-
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'BEEMINDER_API_KEY not found in environment variables',
-			)
-
-			expect(mock_fetch).not.toHaveBeenCalled()
-		})
-	})
-
 	describe('successful API submission', () => {
-		beforeEach(() => {
-			process.env.BEEMINDER_API_KEY = 'test-api-key'
-		})
-
 		test('should submit datapoint successfully', async () => {
 			const mock_response = {
 				id: '12345',
@@ -102,7 +57,7 @@ describe('submit_to_beeminder', () => {
 			console.log = console_log_spy
 
 			try {
-				await submit_to_beeminder('test-goal', 100)
+				await submit_to_beeminder('test-api-key', 'test-goal', 100)
 
 				// Verify fetch was called with correct parameters
 				expect(mock_fetch).toHaveBeenCalledTimes(1)
@@ -138,7 +93,7 @@ describe('submit_to_beeminder', () => {
 				json: () => Promise.resolve({}),
 			})
 
-			await submit_to_beeminder('nebulous-work', 250)
+			await submit_to_beeminder('test-api-key', 'nebulous-work', 250)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				'https://www.beeminder.com/api/v1/users/me/goals/nebulous-work/datapoints.json?auth_token=test-api-key',
@@ -158,7 +113,7 @@ describe('submit_to_beeminder', () => {
 				json: () => Promise.resolve({}),
 			})
 
-			await submit_to_beeminder('test-goal', 0)
+			await submit_to_beeminder('test-api-key', 'test-goal', 0)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
@@ -178,7 +133,7 @@ describe('submit_to_beeminder', () => {
 				json: () => Promise.resolve({}),
 			})
 
-			await submit_to_beeminder('test-goal', 999999)
+			await submit_to_beeminder('test-api-key', 'test-goal', 999999)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				'https://www.beeminder.com/api/v1/users/me/goals/test-goal/datapoints.json?auth_token=test-api-key',
@@ -194,10 +149,6 @@ describe('submit_to_beeminder', () => {
 	})
 
 	describe('API error handling', () => {
-		beforeEach(() => {
-			process.env.BEEMINDER_API_KEY = 'test-api-key'
-		})
-
 		test('should throw error on HTTP 400 response', async () => {
 			mock_fetch.mockResolvedValueOnce({
 				ok: false,
@@ -205,7 +156,9 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.resolve('Bad Request: Invalid parameters'),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow(
 				'Beeminder API error: 400 Bad Request: Invalid parameters',
 			)
 		})
@@ -217,7 +170,9 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.resolve('Unauthorized: Invalid API key'),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow(
 				'Beeminder API error: 401 Unauthorized: Invalid API key',
 			)
 		})
@@ -230,7 +185,7 @@ describe('submit_to_beeminder', () => {
 			})
 
 			await expect(
-				submit_to_beeminder('non-existent-goal', 100),
+				submit_to_beeminder('test-api-key', 'non-existent-goal', 100),
 			).rejects.toThrow(
 				'Beeminder API error: 404 Not Found: Goal does not exist',
 			)
@@ -243,9 +198,9 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.resolve('Internal Server Error'),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'Beeminder API error: 500 Internal Server Error',
-			)
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow('Beeminder API error: 500 Internal Server Error')
 		})
 
 		test('should handle empty error response', async () => {
@@ -255,17 +210,17 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.resolve(''),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'Beeminder API error: 422 ',
-			)
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow('Beeminder API error: 422 ')
 		})
 
 		test('should handle network error', async () => {
 			mock_fetch.mockRejectedValueOnce(new Error('Network connection failed'))
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'Network connection failed',
-			)
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow('Network connection failed')
 		})
 
 		test('should handle JSON parse error in error response', async () => {
@@ -275,9 +230,9 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.reject(new Error('Failed to read response')),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
-				'Failed to read response',
-			)
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow('Failed to read response')
 		})
 
 		test('should handle duplicate request gracefully', async () => {
@@ -293,7 +248,7 @@ describe('submit_to_beeminder', () => {
 
 			try {
 				// Should not throw an error
-				await submit_to_beeminder('test-goal', 100)
+				await submit_to_beeminder('test-api-key', 'test-goal', 100)
 
 				// Verify duplicate message was logged
 				expect(console_log_spy).toHaveBeenCalledWith(
@@ -312,7 +267,9 @@ describe('submit_to_beeminder', () => {
 				text: () => Promise.resolve('{"errors":"Invalid data format"}'),
 			})
 
-			await expect(submit_to_beeminder('test-goal', 100)).rejects.toThrow(
+			await expect(
+				submit_to_beeminder('test-api-key', 'test-goal', 100),
+			).rejects.toThrow(
 				'Beeminder API error: 422 {"errors":"Invalid data format"}',
 			)
 		})
@@ -320,7 +277,6 @@ describe('submit_to_beeminder', () => {
 
 	describe('request format validation', () => {
 		beforeEach(() => {
-			process.env.BEEMINDER_API_KEY = 'test-api-key'
 			mock_fetch.mockResolvedValueOnce({
 				ok: true,
 				json: () => Promise.resolve({}),
@@ -328,7 +284,7 @@ describe('submit_to_beeminder', () => {
 		})
 
 		test('should use correct HTTP method', async () => {
-			await submit_to_beeminder('test-goal', 100)
+			await submit_to_beeminder('test-api-key', 'test-goal', 100)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				expect.any(String),
@@ -339,7 +295,7 @@ describe('submit_to_beeminder', () => {
 		})
 
 		test('should set correct content type header', async () => {
-			await submit_to_beeminder('test-goal', 100)
+			await submit_to_beeminder('test-api-key', 'test-goal', 100)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				expect.any(String),
@@ -352,7 +308,7 @@ describe('submit_to_beeminder', () => {
 		})
 
 		test('should format request URL correctly', async () => {
-			await submit_to_beeminder('my-special-goal', 100)
+			await submit_to_beeminder('test-api-key', 'my-special-goal', 100)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				'https://www.beeminder.com/api/v1/users/me/goals/my-special-goal/datapoints.json?auth_token=test-api-key',
@@ -361,7 +317,7 @@ describe('submit_to_beeminder', () => {
 		})
 
 		test('should include all required fields in request body', async () => {
-			await submit_to_beeminder('test-goal', 150)
+			await submit_to_beeminder('test-api-key', 'test-goal', 150)
 
 			const call_args = mock_fetch.mock.calls[0]
 			const request_body = JSON.parse(call_args[1].body)
@@ -386,8 +342,8 @@ describe('submit_to_beeminder', () => {
 				})
 
 			// Test different word counts generate different request IDs
-			await submit_to_beeminder('test-goal', 100)
-			await submit_to_beeminder('test-goal', 200)
+			await submit_to_beeminder('test-api-key', 'test-goal', 100)
+			await submit_to_beeminder('test-api-key', 'test-goal', 200)
 
 			const first_call_body = JSON.parse(mock_fetch.mock.calls[0][1].body)
 			const second_call_body = JSON.parse(mock_fetch.mock.calls[1][1].body)
@@ -409,8 +365,8 @@ describe('submit_to_beeminder', () => {
 					json: () => Promise.resolve({}),
 				})
 
-			await submit_to_beeminder('test-goal', 100)
-			await submit_to_beeminder('different-goal', 100)
+			await submit_to_beeminder('test-api-key', 'test-goal', 100)
+			await submit_to_beeminder('test-api-key', 'different-goal', 100)
 
 			const first_call_body = JSON.parse(mock_fetch.mock.calls[0][1].body)
 			const second_call_body = JSON.parse(mock_fetch.mock.calls[1][1].body)
@@ -422,7 +378,6 @@ describe('submit_to_beeminder', () => {
 
 	describe('edge cases', () => {
 		beforeEach(() => {
-			process.env.BEEMINDER_API_KEY = 'test-api-key'
 			mock_fetch.mockClear()
 		})
 
@@ -432,7 +387,11 @@ describe('submit_to_beeminder', () => {
 				json: () => Promise.resolve({}),
 			})
 
-			await submit_to_beeminder('goal-with-dashes_and_underscores', 100)
+			await submit_to_beeminder(
+				'test-api-key',
+				'goal-with-dashes_and_underscores',
+				100,
+			)
 
 			expect(mock_fetch).toHaveBeenCalledWith(
 				'https://www.beeminder.com/api/v1/users/me/goals/goal-with-dashes_and_underscores/datapoints.json?auth_token=test-api-key',
@@ -442,14 +401,13 @@ describe('submit_to_beeminder', () => {
 
 		test('should handle very long API key', async () => {
 			const long_api_key = 'a'.repeat(1000)
-			process.env.BEEMINDER_API_KEY = long_api_key
 
 			mock_fetch.mockResolvedValueOnce({
 				ok: true,
 				json: () => Promise.resolve({}),
 			})
 
-			await submit_to_beeminder('test-goal', 100)
+			await submit_to_beeminder(long_api_key, 'test-goal', 100)
 
 			const call_args = mock_fetch.mock.calls[0]
 			const request_url = call_args[0]

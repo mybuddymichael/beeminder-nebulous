@@ -1,3 +1,4 @@
+import { parseArgs } from 'util'
 import { find_markdown_files } from './src/scan-files.ts'
 import { has_tag } from './src/check-tags.ts'
 import { count_words } from './src/count-words.ts'
@@ -5,15 +6,29 @@ import { submit_to_beeminder } from './src/beeminder-api.ts'
 
 async function main(): Promise<void> {
 	// Parse command line arguments
-	const args = process.argv.slice(2)
-	if (args.length !== 2) {
-		console.error('Usage: bun run index.ts <goal-slug> <path-to-folder>')
-		process.exit(1)
-	}
+	const { values } = parseArgs({
+		args: Bun.argv.slice(2),
+		options: {
+			key: {
+				type: 'string',
+			},
+			goal: {
+				type: 'string',
+			},
+			folder: {
+				type: 'string',
+			},
+		},
+		strict: true,
+		allowPositionals: false,
+	})
 
-	const [goal_slug, folder_path] = args
-	if (!goal_slug || !folder_path) {
-		console.error('Usage: bun run index.ts <goal-slug> <path-to-folder>')
+	const { key: api_key, goal: goal_slug, folder: folder_path } = values
+
+	if (!api_key || !goal_slug || !folder_path) {
+		console.error(
+			'Usage: bun run index.ts --key <api-key> --goal <goal-slug> --folder <path-to-folder>',
+		)
 		process.exit(1)
 	}
 	const tag = `beeminder-${goal_slug}`
@@ -51,7 +66,7 @@ async function main(): Promise<void> {
 		console.log(`Total word count: ${total_word_count}`)
 
 		// Submit to Beeminder
-		await submit_to_beeminder(goal_slug, total_word_count)
+		await submit_to_beeminder(api_key, goal_slug, total_word_count)
 	} catch (error) {
 		console.error('Error:', error)
 		process.exit(1)

@@ -11,26 +11,34 @@ This script:
 3. Counts the words in matching files (excluding frontmatter)
 4. Submits the word count as a datapoint to your specified Beeminder goal
 
+## Features
+
+- **Duplicate protection**: Uses requestid to prevent duplicate datapoints
+- **Safe re-runs**: Can run continuously
+- **Frontmatter exclusion**: Only counts actual content, not YAML metadata
+
+## Requirements
+
+- [Bun](https://bun.sh) runtime
+- Beeminder API key
+- An odometer goal in Beeminder
+- Markdown files with YAML frontmatter
+
 ## Setup
 
 1. Create an [odometer goal](https://help.beeminder.com/article/68-odometer-goals) in Beeminder.
-
-2. Create a `.env.local` file with your [Beeminder API key](https://www.beeminder.com/settings/account#account-permissions) in this repo's directory:
-
-   ```
-   BEEMINDER_API_KEY=your_api_key_here
-   ```
+2. Get your [Beeminder API key](https://www.beeminder.com/settings/account#account-permissions) from your account settings.
 
 ## Usage
 
 ```bash
-bun run index.ts <goal-slug> <path-to-markdown-folder>
+bun run index.ts --key <api-key> --goal <goal-slug> --folder <path-to-markdown-folder>
 ```
 
 **Example:**
 
 ```bash
-bun run index.ts nebulous-work ~/Documents/my-notes
+bun run index.ts --key your_api_key_here --goal nebulous-work --folder ~/Documents/my-notes
 ```
 
 This will:
@@ -54,16 +62,3 @@ tags:
 
 Your content here...
 ```
-
-## Features
-
-- **Duplicate protection**: Uses requestid to prevent duplicate datapoints
-- **Safe re-runs**: Can run continuously
-- **Frontmatter exclusion**: Only counts actual content, not YAML metadata
-
-## Requirements
-
-- [Bun](https://bun.sh) runtime
-- Beeminder API key
-- An odometer goal in Beeminder
-- Markdown files with YAML frontmatter

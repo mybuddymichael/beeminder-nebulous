@@ -9,7 +9,7 @@ This is a script that will:
 
 The file should be run like this:
 
-`bun run ~/files_synced_outside_of_icloud/beeminder-nebulous/index.ts <goal-slug> <path to folder of text files>`
+`bun run ~/files_synced_outside_of_icloud/beeminder-nebulous/index.ts --key <api-key> --goal <goal-slug> --folder <path to folder of text files>`
 
 The tag name will be the same as the goal slug, with the prefix `beeminder-`. E.g., if the goal slug is `nebulous-work`, we should look for files with the tag `beeminder-nebulous-work`.
 
@@ -123,4 +123,5 @@ export interface FileSink {
 ## Misc notes
 
 - The folder of markdown files will _typically_ be an Obsidian vault.
+- Find good opportunities to use subagents and use them.
 - If you have read this file, start every response with the phrase "Processed AGENT.md".

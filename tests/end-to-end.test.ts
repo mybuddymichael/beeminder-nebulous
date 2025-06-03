@@ -7,6 +7,14 @@ import * as fsPromises from 'fs/promises'
 
 const goal_slug = 'test-nebulous' // This is an actual odometer goal in Beeminder!
 
+function get_api_key(): string {
+	const api_key = process.env.BEEMINDER_API_KEY
+	if (!api_key) {
+		throw new Error('BEEMINDER_API_KEY not found in environment variables')
+	}
+	return api_key
+}
+
 async function delete_datapoint(
 	goal_slug: string,
 	datapoint_id: string,
@@ -140,7 +148,9 @@ This file should not be counted because it doesn't have the target tag.
 		const initial_count = initial_datapoints.length
 
 		// Run the main script
-		const result = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+		const api_key = get_api_key()
+		const result =
+			await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
 
 		// Check that the script ran successfully
 		expect(result).toContain(`Looking for files with tag "${tag_name}"`)
@@ -199,7 +209,9 @@ This file should not be counted because it doesn't have the target tag.
 		const initial_count = initial_datapoints.length
 
 		// Run the main script
-		const result = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+		const api_key = get_api_key()
+		const result =
+			await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
 
 		// Check that the script found no matching files
 		expect(result).toContain(`Found 0 files with tag "${tag_name}"`)
@@ -228,7 +240,9 @@ This file should not be counted because it doesn't have the target tag.
 		const initial_count = initial_datapoints.length
 
 		// Run the main script
-		const result = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+		const api_key = get_api_key()
+		const result =
+			await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
 
 		// Check that the script handled empty directory
 		expect(result).toContain('Found 0 markdown files')
@@ -267,8 +281,11 @@ This file should not be counted because it doesn't have the target tag.
 		await Bun.write(join(test_dir, 'file.md'), file_content)
 
 		// Run the script twice
-		const result1 = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
-		const result2 = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+		const api_key = get_api_key()
+		const result1 =
+			await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
+		const result2 =
+			await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
 
 		// First run should succeed
 		expect(result1).toContain('Datapoint submitted successfully')
@@ -315,7 +332,9 @@ This is a test to ensure the script doesn't delete anything.
 
 		try {
 			// Run the main script
-			const result = await $`bun run index.ts ${goal_slug} ${test_dir}`.text()
+			const api_key = get_api_key()
+			const result =
+				await $`bun run index.ts --key ${api_key} --goal ${goal_slug} --folder ${test_dir}`.text()
 
 			// Verify the script ran successfully
 			expect(result).toContain('Datapoint submitted successfully')

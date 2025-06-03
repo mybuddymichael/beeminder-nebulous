@@ -1,12 +1,8 @@
 export async function submit_to_beeminder(
+	api_key: string,
 	goal_slug: string,
 	word_count: number,
 ): Promise<void> {
-	const api_key = process.env.BEEMINDER_API_KEY
-	if (!api_key) {
-		throw new Error('BEEMINDER_API_KEY not found in environment variables')
-	}
-
 	const today = new Date().toISOString().split('T')[0]
 	const request_id = `wordcount-${word_count}-${today}`
 	const url = `https://www.beeminder.com/api/v1/users/me/goals/${goal_slug}/datapoints.json?auth_token=${api_key}`
